@@ -18,6 +18,22 @@ const CompressionPlugin = require("compression-webpack-plugin");
 const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
+// const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+
+// adding custom styleloader functionality to inject css styles into shadow dom
+const customStyleLoader = {
+        loader: require.resolve('style-loader'),
+        options: {
+            insert: function (linkTag) {
+                setTimeout(()=>{
+                    const parent = document.querySelector('#udan-react-root').shadowRoot;
+                    // parent.prepend(linkTag);
+                    parent.appendChild(linkTag);
+                },10);
+            },
+            // injectType: "linkTag"
+        }
+    }
 
 module.exports = (env, argv) => {
     // reduce it to a nice object, the same as before
@@ -68,20 +84,19 @@ module.exports = (env, argv) => {
                         }),
                     },
                 },
-                {
+                /*{
                     // Conditions:
                     test: /\.css$/,
+                    use: ["style-loader", "css-loader"], // When multiple loader configuration needed
+                },*/
+                {
+                    test: /\.css$/,
+                    exclude: /node_modules/,
                     use: [
-                        {
-                            loader: "style-loader",
-                            options: {
-                                injectType: "singletonStyleTag", // merge all the css inside one style tag
-                                insert: "body", // push the css inside body tag
-                                attributes: { id: "udan-style" }, // set the style emement udan style tag
-                            },
-                        },
-                        { loader: "css-loader" },
-                    ], // When multiple loader configuration needed
+                        customStyleLoader,
+                        // MiniCssExtractPlugin.loader,
+                        "css-loader"
+                    ],
                 },
                 {
                     // Conditions:
@@ -89,18 +104,8 @@ module.exports = (env, argv) => {
                     exclude: /node_modules/,
                     use: [
                         // When multiple loader configuration needed
-                        /* {
-                             loader: 'file-loader',
-                             options: {name: '[name].min.css'}
-                         },*/
-                        {
-                            loader: "style-loader",
-                            options: {
-                                injectType: "singletonStyleTag", // merge all the css inside one style tag
-                                insert: "body", // push the css inside body tag
-                                attributes: { id: "udan-style" }, // set the style emement udan style tag
-                            },
-                        },
+                        // "style-loader",
+                        customStyleLoader,
                         "css-loader",
                         "sass-loader",
                     ],
@@ -159,6 +164,9 @@ module.exports = (env, argv) => {
                 defaults: false,
                 ignoreStub: true,
             }),
+            /*new MiniCssExtractPlugin({
+                filename: "styles.css",
+            }),*/
             // new BundleAnalyzerPlugin(),
             // gzip
             /*new CompressionPlugin({
